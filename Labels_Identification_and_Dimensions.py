@@ -37,7 +37,7 @@ Note A: 150, 200 work for pic 94 when resized
         69, 100 works for pic 81 when resized 
         either of the last two options work for pic 84 when resized
         
-Note B: Here it iseasier to carry area forward than all info bc that is not
+Note B: Here it is easier to carry area forward than all info bc that is not
         consistent-i.e.for circle only carrying forward the radius whereas
         for rectangle would carry forward width and height.
         
