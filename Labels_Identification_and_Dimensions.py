@@ -250,18 +250,4 @@ def Info_Shape_Size(img):
 ##THE CODE.
 img = cv2.imread('9.jpg')
 Info_Shape_Size(img)
-
-#NOTE FOR SELF: the masking works but the improved sorteddata isnt working.
-
-
 #%%
-##IGNORE. Extras for exploring the results.
-for c in contours:
-    rect = cv2.minAreaRect(c)
-    box = cv2.boxPoints(rect)
-    box = np.int0(box)
-    cv2.drawContours(img,[box],0,(0,191,255),5)
-plt.imshow(img)
- 
-#%%
-plt.close()
