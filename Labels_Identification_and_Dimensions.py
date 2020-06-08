@@ -170,8 +170,8 @@ def Remove_Section_Inside_Contour(contour, image):
     label, we know it cannot also contain the scale bar. We therefore have
     confidence in removing all further contours in this area from the search.
     
-    Although not the most efficient, choosing to mask (?) the area inside the 
-    Label contour followed by another search for the remaining contours in the
+    Although not the most efficient method, currently masking the area inside 
+    the Label contour then performing another search for the contours in the
     image.
     """
     
