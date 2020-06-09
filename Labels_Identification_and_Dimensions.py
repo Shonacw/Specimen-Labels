@@ -5,7 +5,7 @@ Created on Fri Jun  5 13:07:21 2020
 
 @author: ShonaCW
 
-PREPARE CONTOURS [Function Name = 'Get_All_Contour()s']
+PREPARE CONTOURS [Function Name = 'Get_All_Contours()']
 Step 1: Perform Canny edge detection with set parameters and find contours.
 Step 2: Perform morphological close operation and find contours again on result.
 Step 3: Refine contour search and order the results by descending area.
@@ -37,11 +37,16 @@ Note A: 150, 200 work for pic 94 when resized
         69, 100 works for pic 81 when resized 
         either of the last two options work for pic 84 when resized
         
-Note B: Here it is easier to carry area forward than all info bc that is not
-        consistent-i.e.for circle only carrying forward the radius whereas
-        for rectangle would carry forward width and height.
+Note B: Here it is easier to just carry area forward, otherwise not consistent 
+        - i.e.for circle only carrying forward the radius whereas for rectangle 
+        would carry forward width and height.
         
 Note C: Here, 'ma' is major axis and 'MA' is minor axis.
+
+Note D: Once we know a certain contour contains the label, we know it cannot 
+        also contain the scale bar. We therefore have confidence in removing 
+        all further contours in the vicinity of the label from our search.
+
 """
 
 #IMPORTING MODULES AND DEFINING REQUIRED FUNCTIONS.
@@ -50,11 +55,6 @@ import numpy as np
 import cv2
 
 def Get_All_Contours(image):
-    ##Option to downscale image, as Canny tends to perform better on smaller images...
-    #w, h, c = image.shape
-    #resize_coeff = 0.25
-    #image = cv2.resize(image, (int(resize_coeff*h), int(resize_coeff*w)))
-    
     """Step 1"""
     canny = cv2.Canny(image, 50, 220) ##see Note A 
     contours, _ = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -71,15 +71,16 @@ def Get_All_Contours(image):
     """Step 3"""
     contours = [c for c in contours if 1800 < cv2.contourArea(c)] 
     
-    ##If assuming the labels are rectangle, can refine search further with only the 
-    ##contours whih are BEST described by a rectange...
+    ##If assuming the labels will be rectangular, can refine search further by
+    ##considering only the contours best described by a rectange...
     #contours = [c for c in contours if decide_shape_to_plot(c)[0] == 0]
     
     areaArray = []
     for i, a in enumerate(contours):
         area_ = cv2.contourArea(a)
         areaArray.append(area_)
-    sorteddata = sorted(zip(areaArray, contours), key=lambda x: x[0], reverse=True)
+    sorteddata = sorted(zip(areaArray, contours), key=lambda x: x[0], \
+                        reverse=True)
     return sorteddata
 
 def yes_or_no(question):
@@ -104,6 +105,19 @@ def plot_rectangle_simple(contour, image):
     plt.imshow(image)
     return w, h
 
+def plot_rectangle_adv(contour, image):
+    x, y, w, h = cv2.boundingRect(contour)
+    
+    #Increase rectangle dimensions
+    w_new = int(w + (h * 0.1))
+    h_new = int(h * 1.1)
+    x = int(x - 0.5*(h * 0.1))
+    y = int(y - 0.5*(h * 0.1))
+    
+    #Fill rectangle
+    cv2.rectangle(image, (x, y), (x + w_new, y + h_new), (0, 0, 0), -1)
+    return w, h
+
 def area_rectangle(box):
     area = 0
     for i in [0,1,2,3]:
@@ -120,15 +134,15 @@ def area_rectangle(box):
 
 def decide_shape_to_plot(c):
     """
-    Function takes a contour c and decides whether its best-approximated by a 
-    rectangle, circle, or ellipse. Returns the contour index, shape, area and
-    dimensions.
+    Function takes a contour c and decides whether it is best-approximated by a 
+    rectangle, circle, or an ellipse. Returns the contour index, shape, area 
+    and dimensions.
     
     See Note B.
     """
     shape = ['Rectangle', 'Circle', 'Ellipse']
     areas = [] ##List will contain the area of each of the bounding shapes
-    diff = [] ##List of the difference in area between contour and bounding shape
+    diff = [] ##List of differences in area between contour and bounding shape
     dimensions = [] ##List for the dimensions of the bounding shapes
     
     countour_area = cv2.contourArea(c)
@@ -166,41 +180,37 @@ def decide_shape_to_plot(c):
 
 def Remove_Section_Inside_Contour(contour, image):
     """
-    Function for refining search. Once we know a certain contour contains the 
-    label, we know it cannot also contain the scale bar. We therefore have
-    confidence in removing all further contours in this area from the search.
+    Function for refining search. See Note D.
     
-    Although not the most efficient method, currently masking the area inside 
-    the Label contour then performing another search for the contours in the
-    image.
-    """
-    
-    mask = np.ones(img.shape[:2], dtype="uint8") * 255
-    cv2.drawContours(mask, [contour], -1, 0, -1)
-    # remove the contours from the image and show the resulting images
+    The rectangular contour is resized (area increased) before masking to ensure
+    ALL contours in the vicinity of the label are removed from our search. This
+    is followed by a search for the remaining contours elsewhere in the image.
+    """ 
+    mask = np.ones(image.shape[:2], dtype="uint8") * 255
+    plot_rectangle_adv(contour, mask)
     image = cv2.bitwise_and(image, image, mask = mask)
     
-    sorteddata = Get_All_Contours(image) #re-define sorteddata on masked image
+    sorteddata = Get_All_Contours(image)
     return sorteddata
 
 def Check_Contours(image, Contours, Question):
+    """
+    Function loops through a given list of contours and asks the user whether
+    the desired contour has been found. Used for locating the label and the 
+    scale bar (if present).
+    """
     i = 0
     while True:
         ##Re-define image to avoid plotting over the top of an edited version
         img = image.copy()
         ##Define contour to be investigated
         c = Contours[i][1]
-        
-        ##Option to rescale image; Canny tends to work better on smaller images
-        #w_, h_, c_ = img.shape
-        #resize_coeff = 0.25
-        #img = cv2.resize(img, (int(resize_coeff*h_), int(resize_coeff*w_)))
 
         ##Plot rectanglular contour
         w, h = plot_rectangle_simple(c, img)
         plt.pause(0.1)
         
-        ##Check if this contour contains the Specimen Label
+        ##Check if this contour contains the Specimen Label/Scale bar
         answer = yes_or_no(Question)
         if answer == False:
             i += 1          ##if not, we keep looping...
@@ -209,45 +219,57 @@ def Check_Contours(image, Contours, Question):
             area = round(w * h, 3)
             dimensions = (w, h)
             
-            ##Obtain a new list of contours, ignoring area enclosed by the label
+            ##Obtain a new list of contours
             sorteddata = Remove_Section_Inside_Contour(c, img)
             plt.close()
             return area, dimensions, sorteddata
         
-def Info_Shape_Size(img):
+def Info_Shape_Size(image, resize = False):
     """
     The main function. Deciphers the shape and dimensions of the label.
     """
-    sorteddata = Get_All_Contours(img)
-    #collect information about the label
-    area_L, dimensions_L, sorteddata_mid = Check_Contours(img, sorteddata, "Is this the Label?")
+    if resize == True:
+        w, h, c = image.shape
+        resize_coeff = 0.25
+        image = cv2.resize(image, (int(resize_coeff*h), int(resize_coeff*w)))
+    
+    
+    sorteddata = Get_All_Contours(image)
+    ##Collect information about the label
+    area_L, dimensions_L, sorteddata_mid = Check_Contours(image, sorteddata, \
+                                                          "Is this the Label?")
 
-    #if applicable, collect information about the scale bar
+    #If applicable, collect information about the scale bar
     answer = yes_or_no('Is there a scale bar?')
     if answer == False:
-        return area_L, dimensions_L
-    if answer == True:
-        area_S, dimensions_S, sorteddata = Check_Contours(img, sorteddata_mid, "Is this the Scale Bar?")
+        dim = f'Dimensions: {str(dimensions_L)[1:-1]} [pixels]'
+        return dim
     
-    #Currently assuming the scale bar will be rectangular
+    if answer == True:
+        area_S, dimensions_S, sorteddata = Check_Contours(image, \
+                                    sorteddata_mid, "Is this the Scale Bar?")
+    
     answer = scale_bar_scale()
     if answer == True:
-        #calculation for an RMS scale bar
-        dim_scale = dimensions_S[0] / 2
-        real_dim = [round(dimensions_L[i] / dim_scale, 3) for i in range(len(dimensions_L))]
+        #Calculation for an NMS scale bar
+        dim_scale = dimensions_S[0]
+        real_dim = [round(dimensions_L[i] / dim_scale, 3) for i in \
+                    range(len(dimensions_L))]
         scaled_dim = f'Dimensions: {str(real_dim)[1:-1]} [cm]'
         return scaled_dim
         
         
     else:
-        #calculation for another tysaape of scale bar
-        real_dim = [round(dimensions_L[i] / dimensions_S[0], 3) for i in range(len(dimensions_S))]
+        #calculation for unfamiliar type of scale bar
+        real_dim = [round(dimensions_L[i] / dimensions_S[0], 3) for i in \
+                    range(len(dimensions_S))]
         scaled_dim = f'Dimensions: {str(real_dim)[1:-1]} [{answer}]'
         return scaled_dim
 
 
 #%%
 ##THE CODE.
-img = cv2.imread('9.jpg')
-Info_Shape_Size(img)
+image = cv2.imread('9.jpg')
+Info_Shape_Size(image, resize = False) 
+
 #%%
