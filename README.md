@@ -1,7 +1,7 @@
-# Specimen-Labels
-##Image processing project in python, Summer 2020. 
 
+# Specimen-Label Image processing project in python, Summer 2020. 
 
+## Notes on Labels_Identification_and_Dimensions.py
 PREPARE CONTOURS [Function Name = 'Get_All_Contours()']
 Step 1: Perform Canny edge detection with set parameters and find contours. \n
 Step 2: Perform morphological close operation and find contours again on result. \n
@@ -25,11 +25,11 @@ Step 4: Ask user whether there is a scale bar included in the image...
                  information.
     
 -------------------------------------------------------------------------------
-MINI READ-ME
+
 Single-Hashed lines are optional lines of code
 Double-Hashe lines are my notes
 -------------------------------------------------------------------------------
-NOTES REFERENCED IN CODE
+## NOTES REFERENCED IN CODE (Labels_Identification_and_Dimensions.py)
 Note A: 150, 200 work for pic 94 when resized 
         0, 220 work for pic 256
         69, 100 works for pic 81 when resized 
