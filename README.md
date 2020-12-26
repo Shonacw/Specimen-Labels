@@ -1,17 +1,21 @@
 # Specimen-Labels
-Image processing project in python, Summer 2020. 
+##Image processing project in python, Summer 2020. 
 
 
 PREPARE CONTOURS [Function Name = 'Get_All_Contours()']
-Step 1: Perform Canny edge detection with set parameters and find contours.
-Step 2: Perform morphological close operation and find contours again on result.
-Step 3: Refine contour search and order the results by descending area.
+Step 1: Perform Canny edge detection with set parameters and find contours. \n
+Step 2: Perform morphological close operation and find contours again on result. \n
+Step 3: Refine contour search and order the results by descending area. \n
+
 OBTAINING AND RETURNING LABEL INFORMATION [Function Name = 'Info_Shape_Size()']
 Step 1: Obtain full list of Contours contained in the image, as described above.
+
 Step 2: One-by-one, outline the contour on the image and ask user whether the
         specimen label has been succesfully identified by the contour.
+        
 Step 3: Once the contour containing the specimen label has been identified, 
         remove all other contours contained in that area (refine contour search).
+        
 Step 4: Ask user whether there is a scale bar included in the image...
         If NO -> calculate dimensions of the specimen label in units of pixels 
                  and return information to the user.
@@ -22,8 +26,8 @@ Step 4: Ask user whether there is a scale bar included in the image...
     
 -------------------------------------------------------------------------------
 MINI READ-ME
-# Single-Hashed lines are optional lines of code
-## Double-Hashe lines are my notes
+Single-Hashed lines are optional lines of code
+Double-Hashe lines are my notes
 -------------------------------------------------------------------------------
 NOTES REFERENCED IN CODE
 Note A: 150, 200 work for pic 94 when resized 
